@@ -3,6 +3,7 @@ package com.roushan.userservice.controller;
 import com.roushan.userservice.entities.User;
 import com.roushan.userservice.service.UserService;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
+import io.github.resilience4j.retry.annotation.Retry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,7 +16,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/users")
 public class UserController {
-
+    private int retryCount = 0;
     private static final Logger log = LoggerFactory.getLogger(UserController.class);
     @Autowired
     private UserService userService;
@@ -29,7 +30,10 @@ public class UserController {
 
     @GetMapping("/{userId}")
     @CircuitBreaker(name = "ratingHotelBreaker", fallbackMethod = "ratingHotelFallBack")
+    @Retry(name = "ratingHotelBreaker", fallbackMethod = "ratingHotelFallBack")
     public ResponseEntity<User> getUserById(@PathVariable("userId") String userId) {
+        retryCount++;
+        log.info("Retry count: "+retryCount);
         User user = this.userService.getUserById(userId);
         return new ResponseEntity<>(user, HttpStatus.OK);
     }
